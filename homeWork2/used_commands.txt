@@ -1,0 +1,20 @@
+tail -n0 -f /var/log/audit/audit.log
+vi /tmp/1.log
+sealert -a /tmp/1.log
+ls -Z /usr/sbin/named
+systemctl status named.service
+ls -Z /etc/named/dynamic/
+ls -Z /etc/named/
+ls -Z /var/named/dynamic/
+ls -Z /var/named/
+semanage fcontext -a -t named_cache_t '/etc/named/dynamic(/.*)?'
+restorecon -v -R /etc/named/dynamic/
+ls -Z /etc/named/dynamic/
+ll /etc/named/dynamic/named.ddns.lab.view1.jnl
+semanage fcontext -d -t named_cache_t '/etc/named/dynamic(/.*)?'
+restorecon -v -R /etc/named/dynamic/
+ls -Z /etc/named/dynamic/
+audit2allow -M named_add --debug < /tmp/1.log
+ll
+cat named_add.te
+semodule -i named_add.pp

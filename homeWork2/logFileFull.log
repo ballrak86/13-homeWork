@@ -1,0 +1,158 @@
+root@otssTestServer:/home/lx/git/otus-linux-adm/selinux_dns_problems# vagrant ssh ns01
+Last login: Fri Oct  1 09:06:50 2021 from 10.0.2.2
+[vagrant@ns01 ~]$ sudo -i
+[root@ns01 ~]# tail -n0 -f /var/log/audit/audit.log
+type=AVC msg=audit(1633085762.808:1926): avc:  denied  { create } for  pid=5203 comm="isc-worker0000" name="named.ddns.lab.view1.jnl" scontext=system_u:system_r:named_t:s0 tcontext=system_u:object_r:etc_t:s0 tclass=file permissive=0
+type=SYSCALL msg=audit(1633085762.808:1926): arch=c000003e syscall=2 success=no exit=-13 a0=7f6f209d7050 a1=241 a2=1b6 a3=24 items=0 ppid=1 pid=5203 auid=4294967295 uid=25 gid=25 euid=25 suid=25 fsuid=25 egid=25 sgid=25 fsgid=25 tty=(none) ses=4294967295 comm="isc-worker0000" exe="/usr/sbin/named" subj=system_u:system_r:named_t:s0 key=(null)
+type=PROCTITLE msg=audit(1633085762.808:1926): proctitle=2F7573722F7362696E2F6E616D6564002D75006E616D6564002D63002F6574632F6E616D65642E636F6E66
+^C
+[root@ns01 ~]# vi /tmp/1.log
+[root@ns01 ~]# sealert -a /tmp/1.log
+100% done
+found 1 alerts in /tmp/1.log
+--------------------------------------------------------------------------------
+
+SELinux запрещает /usr/sbin/named доступ create к файл named.ddns.lab.view1.jnl.
+
+*****  Модуль catchall_labels предлагает (точность 83.8)  ********************
+
+Если вы хотите разрешить named иметь create доступ к named.ddns.lab.view1.jnl $TARGET_УЧЕБНЫЙ КЛАСС
+То необходимо изменить метку на named.ddns.lab.view1.jnl
+Сделать
+# semanage fcontext -a -t FILE_TYPE 'named.ddns.lab.view1.jnl'
+где FILE_TYPE может принимать значения: dnssec_trigger_var_run_t, ipa_var_lib_t, krb5_host_rcache_t, krb5_keytab_t, named_cache_t, named_log_t, named_tmp_t, named_var_run_t, named_zone_t.
+Затем выполните:
+restorecon -v 'named.ddns.lab.view1.jnl'
+
+
+*****  Модуль catchall предлагает (точность 17.1)  ***************************
+
+Если вы считаете, что named должно быть разрешено create доступ к named.ddns.lab.view1.jnl file по умолчанию.
+То рекомендуется создать отчет об ошибке.
+Чтобы разрешить доступ, можно создать локальный модуль политики.
+Сделать
+allow this access for now by executing:
+# ausearch -c 'isc-worker0000' --raw | audit2allow -M my-iscworker0000
+# semodule -i my-iscworker0000.pp
+
+
+Дополнительные сведения:
+Исходный контекст             system_u:system_r:named_t:s0
+Целевой контекст              system_u:object_r:etc_t:s0
+Целевые объекты               named.ddns.lab.view1.jnl [ file ]
+Источник                      isc-worker0000
+Путь к источнику              /usr/sbin/named
+Порт                          <Unknown>
+Узел                          <Unknown>
+Исходные пакеты RPM           bind-9.11.4-26.P2.el7_9.7.x86_64
+Целевые пакеты RPM
+Пакет регламента              selinux-policy-3.13.1-266.el7.noarch
+SELinux активен               True
+Тип регламента                targeted
+Режим                         Enforcing
+Имя узла                      ns01
+Платформа                     Linux ns01 3.10.0-1127.el7.x86_64 #1 SMP Tue Mar
+                              31 23:36:51 UTC 2020 x86_64 x86_64
+Счетчик уведомлений           1
+Впервые обнаружено            2021-10-01 10:56:02 UTC
+В последний раз               2021-10-01 10:56:02 UTC
+Локальный ID                  4c2d631c-c642-4ba0-94df-34e7106ac85f
+
+Построчный вывод сообщений аудита
+type=AVC msg=audit(1633085762.808:1926): avc:  denied  { create } for  pid=5203 comm="isc-worker0000" name="named.ddns.lab.view1.jnl" scontext=system_u:system_r:named_t:s0 tcontext=system_u:object_r:etc_t:s0 tclass=file permissive=0
+
+
+type=SYSCALL msg=audit(1633085762.808:1926): arch=x86_64 syscall=open success=no exit=EACCES a0=7f6f209d7050 a1=241 a2=1b6 a3=24 items=0 ppid=1 pid=5203 auid=4294967295 uid=25 gid=25 euid=25 suid=25 fsuid=25 egid=25 sgid=25 fsgid=25 tty=(none) ses=4294967295 comm=isc-worker0000 exe=/usr/sbin/named subj=system_u:system_r:named_t:s0 key=(null)
+
+Hash: isc-worker0000,named_t,etc_t,file,create
+
+[root@ns01 ~]# ls -Z /usr/sbin/named
+-rwxr-xr-x. root root system_u:object_r:named_exec_t:s0 /usr/sbin/named
+[root@ns01 ~]# systemctl status named.service
+● named.service - Berkeley Internet Name Domain (DNS)
+   Loaded: loaded (/usr/lib/systemd/system/named.service; enabled; vendor preset: disabled)
+   Active: active (running) since Пт 2021-10-01 09:06:51 UTC; 2h 6min ago
+  Process: 5201 ExecStart=/usr/sbin/named -u named -c ${NAMEDCONF} $OPTIONS (code=exited, status=0/SUCCESS)
+  Process: 5199 ExecStartPre=/bin/bash -c if [ ! "$DISABLE_ZONE_CHECKING" == "yes" ]; then /usr/sbin/named-checkconf -z "$NAMEDCONF"; else echo "Checking of zone files is disabled"; fi (code=exited, status=0/SUCCESS)
+ Main PID: 5203 (named)
+   CGroup: /system.slice/named.service
+           └─5203 /usr/sbin/named -u named -c /etc/named.conf
+
+окт 01 09:06:51 ns01 named[5203]: network unreachable resolving './NS/IN': 2001:500:2d::d#53
+окт 01 09:06:51 ns01 named[5203]: network unreachable resolving './DNSKEY/IN': 2001:503:c27::2:30#53
+окт 01 09:06:51 ns01 named[5203]: managed-keys-zone/view1: Key 20326 for zone . acceptance timer complete: key now trusted
+окт 01 09:06:51 ns01 named[5203]: managed-keys-zone/default: Key 20326 for zone . acceptance timer complete: key now trusted
+окт 01 09:06:51 ns01 named[5203]: resolver priming query complete
+окт 01 09:06:52 ns01 named[5203]: resolver priming query complete
+окт 01 10:56:02 ns01 named[5203]: client @0x7f6f1403c3e0 192.168.50.15#39567/key zonetransfer.key: view view1: signer "zonetransfer.key" approved
+окт 01 10:56:02 ns01 named[5203]: client @0x7f6f1403c3e0 192.168.50.15#39567/key zonetransfer.key: view view1: updating zone 'ddns.lab/IN': adding an RR at 'www.ddns.lab' A 192.168.50.15
+окт 01 10:56:02 ns01 named[5203]: /etc/named/dynamic/named.ddns.lab.view1.jnl: create: permission denied
+окт 01 10:56:02 ns01 named[5203]: client @0x7f6f1403c3e0 192.168.50.15#39567/key zonetransfer.key: view view1: updating zone 'ddns.lab/IN': error: journal open failed: unexpected error
+[root@ns01 ~]# ls -Z /etc/named/dynamic/
+-rw-rw----. named named system_u:object_r:etc_t:s0       named.ddns.lab
+-rw-rw----. named named system_u:object_r:etc_t:s0       named.ddns.lab.view1
+[root@ns01 ~]# ls -Z /etc/named/
+drw-rwx---. root named unconfined_u:object_r:etc_t:s0   dynamic
+-rw-rw----. root named system_u:object_r:etc_t:s0       named.50.168.192.rev
+-rw-rw----. root named system_u:object_r:etc_t:s0       named.dns.lab
+-rw-rw----. root named system_u:object_r:etc_t:s0       named.dns.lab.view1
+-rw-rw----. root named system_u:object_r:etc_t:s0       named.newdns.lab
+[root@ns01 ~]# ls -Z /var/named/dynamic/
+-rw-r--r--. named named system_u:object_r:named_cache_t:s0 default.mkeys
+-rw-r--r--. named named system_u:object_r:named_cache_t:s0 default.mkeys.jnl
+-rw-r--r--. named named system_u:object_r:named_cache_t:s0 view1.mkeys
+-rw-r--r--. named named system_u:object_r:named_cache_t:s0 view1.mkeys.jnl
+[root@ns01 ~]# ls -Z /var/named/
+drwxrwx---. named named system_u:object_r:named_cache_t:s0 data
+drwxrwx---. named named system_u:object_r:named_cache_t:s0 dynamic
+-rw-r-----. root  named system_u:object_r:named_conf_t:s0 named.ca
+-rw-r-----. root  named system_u:object_r:named_zone_t:s0 named.empty
+-rw-r-----. root  named system_u:object_r:named_zone_t:s0 named.localhost
+-rw-r-----. root  named system_u:object_r:named_zone_t:s0 named.loopback
+drwxrwx---. named named system_u:object_r:named_cache_t:s0 slaves
+[root@ns01 ~]# semanage fcontext -a -t named_cache_t '/etc/named/dynamic(/.*)?'
+[root@ns01 ~]# restorecon -v -R /etc/named/dynamic/
+restorecon reset /etc/named/dynamic context unconfined_u:object_r:etc_t:s0->unconfined_u:object_r:named_cache_t:s0
+restorecon reset /etc/named/dynamic/named.ddns.lab context system_u:object_r:etc_t:s0->system_u:object_r:named_cache_t:s0
+restorecon reset /etc/named/dynamic/named.ddns.lab.view1 context system_u:object_r:etc_t:s0->system_u:object_r:named_cache_t:s0
+[root@ns01 ~]# ls -Z /etc/named/dynamic/
+-rw-rw----. named named system_u:object_r:named_cache_t:s0 named.ddns.lab
+-rw-rw----. named named system_u:object_r:named_cache_t:s0 named.ddns.lab.view1
+[root@ns01 ~]# ll /etc/named/dynamic/named.ddns.lab.view1.jnl
+-rw-r--r--. 1 named named 700 окт  1 11:42 /etc/named/dynamic/named.ddns.lab.view1.jnl
+[root@ns01 ~]# semanage fcontext -d -t named_cache_t '/etc/named/dynamic(/.*)?'
+[root@ns01 ~]# restorecon -v -R /etc/named/dynamic/
+restorecon reset /etc/named/dynamic context unconfined_u:object_r:named_cache_t:s0->unconfined_u:object_r:etc_t:s0
+restorecon reset /etc/named/dynamic/named.ddns.lab context system_u:object_r:named_cache_t:s0->system_u:object_r:etc_t:s0
+restorecon reset /etc/named/dynamic/named.ddns.lab.view1 context system_u:object_r:named_cache_t:s0->system_u:object_r:etc_t:s0
+restorecon reset /etc/named/dynamic/named.ddns.lab.view1.jnl context system_u:object_r:named_cache_t:s0->system_u:object_r:etc_t:s0
+[root@ns01 ~]# ls -Z /etc/named/dynamic/
+-rw-rw----. named named system_u:object_r:etc_t:s0       named.ddns.lab
+-rw-rw----. named named system_u:object_r:etc_t:s0       named.ddns.lab.view1
+[root@ns01 ~]# audit2allow -M named_add --debug < /tmp/1.log
+******************** IMPORTANT ***********************
+To make this policy package active, execute:
+
+semodule -i named_add.pp
+
+[root@ns01 ~]# ll
+total 24
+-rw-------. 1 root root 5570 апр 30  2020 anaconda-ks.cfg
+-rw-r--r--. 1 root root  925 окт  1 11:49 named_add.pp
+-rw-r--r--. 1 root root  196 окт  1 11:49 named_add.te
+-rw-------. 1 root root 5300 апр 30  2020 original-ks.cfg
+[root@ns01 ~]# cat named_add.te
+
+module named_add 1.0;
+
+require {
+        type etc_t;
+        type named_t;
+        class file create;
+}
+
+#============= named_t ==============
+
+#!!!! WARNING: 'etc_t' is a base type.
+allow named_t etc_t:file create;
+[root@ns01 ~]# semodule -i named_add.pp

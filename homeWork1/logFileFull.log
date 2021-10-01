@@ -1,0 +1,275 @@
+root@otssTestServer:/home/lx/git/testAnsible# vagrant up
+Bringing machine 'nginx' up with 'virtualbox' provider...
+==> nginx: Importing base box 'centos/7'...
+==> nginx: Matching MAC address for NAT networking...
+==> nginx: Checking if box 'centos/7' version '2004.01' is up to date...
+==> nginx: Setting the name of the VM: testAnsible_nginx_1633003382396_94560
+==> nginx: Clearing any previously set network interfaces...
+==> nginx: Preparing network interfaces based on configuration...
+    nginx: Adapter 1: nat
+    nginx: Adapter 2: hostonly
+==> nginx: Forwarding ports...
+    nginx: 22 (guest) => 2222 (host) (adapter 1)
+==> nginx: Running 'pre-boot' VM customizations...
+==> nginx: Booting VM...
+==> nginx: Waiting for machine to boot. This may take a few minutes...
+    nginx: SSH address: 127.0.0.1:2222
+    nginx: SSH username: vagrant
+    nginx: SSH auth method: private key
+    nginx:
+    nginx: Vagrant insecure key detected. Vagrant will automatically replace
+    nginx: this with a newly generated keypair for better security.
+    nginx:
+    nginx: Inserting generated public key within guest...
+    nginx: Removing insecure key from the guest if it's present...
+    nginx: Key inserted! Disconnecting and reconnecting using new SSH key...
+==> nginx: Machine booted and ready!
+==> nginx: Checking for guest additions in VM...
+    nginx: No guest additions were detected on the base box for this VM! Guest
+    nginx: additions are required for forwarded ports, shared folders, host only
+    nginx: networking, and more. If SSH fails on this machine, please install
+    nginx: the guest additions and repackage the box to continue.
+    nginx:
+    nginx: This is not an error message; everything may continue to work properly,
+    nginx: in which case you may ignore this message.
+==> nginx: Setting hostname...
+==> nginx: Configuring and enabling network interfaces...
+==> nginx: Rsyncing folder: /home/lx/git/testAnsible/ => /vagrant
+==> nginx: Running provisioner: ansible...
+Vagrant gathered an unknown Ansible version:
+
+ansible [core 2.11.5]
+  config file = /home/lx/git/testAnsible/ansible.cfg
+  configured module search path = [u'/root/.ansible/plugins/modules', u'/usr/share/ansible/plugins/modules']
+  ansible python module location = /usr/local/lib/python2.7/dist-packages/ansible
+  ansible collection location = /root/.ansible/collections:/usr/share/ansible/collections
+  executable location = /usr/local/bin/ansible
+  python version = 2.7.17 (default, Feb 27 2021, 15:10:58) [GCC 7.5.0]
+  jinja version = 2.11.3
+  libyaml = True
+
+and falls back on the compatibility mode '1.8'.
+
+Alternatively, the compatibility mode can be specified in your Vagrantfile:
+https://www.vagrantup.com/docs/provisioning/ansible_common.html#compatibility_mode
+
+    nginx: Running ansible-playbook...
+
+PLAY [NGINX | Install and configure NGINX] *************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [nginx]
+
+TASK [NGINX | Install EPEL Repo package from standart repo] ********************
+changed: [nginx]
+
+TASK [NGINX | Install NGINX package from EPEL Repo] ****************************
+changed: [nginx]
+
+TASK [NGINX | Enable systemd NGINX] ********************************************
+changed: [nginx]
+
+TASK [NGINX | Create NGINX config file from template] **************************
+changed: [nginx]
+
+RUNNING HANDLER [restart nginx] ************************************************
+changed: [nginx]
+
+RUNNING HANDLER [reload nginx] *************************************************
+changed: [nginx]
+
+PLAY RECAP *********************************************************************
+nginx                      : ok=7    changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+root@otssTestServer:/home/lx/git/testAnsible# vagrant ssh
+Last login: Thu Sep 30 12:06:21 2021 from 10.0.2.2
+[vagrant@nginx ~]$ sudo -i
+[root@nginx ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; vendor preset: disabled)
+   Active: active (running) since Thu 2021-09-30 12:06:21 UTC; 5min ago
+  Process: 4172 ExecReload=/usr/sbin/nginx -s reload (code=exited, status=0/SUCCESS)
+  Process: 4094 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 4091 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+  Process: 4090 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 4096 (nginx)
+   CGroup: /system.slice/nginx.service
+           ├─4096 nginx: master process /usr/sbin/nginx
+           └─4173 nginx: worker process
+
+Sep 30 12:06:21 nginx systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Sep 30 12:06:21 nginx nginx[4091]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Sep 30 12:06:21 nginx nginx[4091]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+Sep 30 12:06:21 nginx systemd[1]: Started The nginx HTTP and reverse proxy server.
+Sep 30 12:06:22 nginx systemd[1]: Reloading The nginx HTTP and reverse proxy server.
+Sep 30 12:06:22 nginx systemd[1]: Reloaded The nginx HTTP and reverse proxy server.
+[root@nginx ~]# yum -y -q install net-tools
+[root@nginx ~]# netstat -natp | grep nginx
+tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN      4096/nginx: master
+[root@nginx ~]# vi /etc/nginx/nginx.conf
+[root@nginx ~]# systemctl restart nginx
+Job for nginx.service failed because the control process exited with error code. See "systemctl status nginx.service" and "journalctl -xe" for details.
+[root@nginx ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; vendor preset: disabled)
+   Active: failed (Result: exit-code) since Thu 2021-09-30 12:18:42 UTC; 9s ago
+  Process: 4493 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=1/FAILURE)
+  Process: 4492 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 4096 (code=exited, status=0/SUCCESS)
+
+Sep 30 12:18:42 nginx systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Sep 30 12:18:42 nginx nginx[4493]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Sep 30 12:18:42 nginx nginx[4493]: nginx: [emerg] bind() to 0.0.0.0:5080 failed (13: Permission denied)
+Sep 30 12:18:42 nginx nginx[4493]: nginx: configuration file /etc/nginx/nginx.conf test failed
+Sep 30 12:18:42 nginx systemd[1]: nginx.service: control process exited, code=exited status=1
+Sep 30 12:18:42 nginx systemd[1]: Failed to start The nginx HTTP and reverse proxy server.
+Sep 30 12:18:42 nginx systemd[1]: Unit nginx.service entered failed state.
+Sep 30 12:18:42 nginx systemd[1]: nginx.service failed.
+[root@nginx ~]# yum -y -q install setools-console policycoreutils-python policycoreutils-newrole selinux-policy-mls setroubleshoot-server
+[root@nginx ~]# less /var/log/audit/audit.log
+[root@nginx ~]# vi /tmp/1.log
+[root@nginx ~]# sealert -a /tmp/1.log
+100% done
+found 1 alerts in /tmp/1.log
+--------------------------------------------------------------------------------
+
+SELinux запрещает /usr/sbin/nginx доступ name_bind к tcp_socket port 5080.
+
+*****  Модуль bind_ports предлагает (точность 92.2)  *************************
+
+Если вы хотите разрешить /usr/sbin/nginx для привязки к сетевому порту $PORT_ЧИСЛО
+То you need to modify the port type.
+Сделать
+# semanage port -a -t PORT_TYPE -p tcp 5080
+    где PORT_TYPE может принимать значения: http_cache_port_t, http_port_t, jboss_management_port_t, jboss_messaging_port_t, ntop_port_t, puppet_port_t.
+
+*****  Модуль catchall_boolean предлагает (точность 7.83)  *******************
+
+Если хотите allow nis to enabled
+То вы должны сообщить SELinux об этом, включив переключатель «nis_enabled».
+
+Сделать
+setsebool -P nis_enabled 1
+
+*****  Модуль catchall предлагает (точность 1.41)  ***************************
+
+Если вы считаете, что nginx должно быть разрешено name_bind доступ к port 5080 tcp_socket по умолчанию.
+То рекомендуется создать отчет об ошибке.
+Чтобы разрешить доступ, можно создать локальный модуль политики.
+Сделать
+allow this access for now by executing:
+# ausearch -c 'nginx' --raw | audit2allow -M my-nginx
+# semodule -i my-nginx.pp
+
+
+Дополнительные сведения:
+Исходный контекст             system_u:system_r:httpd_t:s0
+Целевой контекст              system_u:object_r:unreserved_port_t:s0
+Целевые объекты               port 5080 [ tcp_socket ]
+Источник                      nginx
+Путь к источнику              /usr/sbin/nginx
+Порт                          5080
+Узел                          <Unknown>
+Исходные пакеты RPM           nginx-1.20.1-2.el7.x86_64
+Целевые пакеты RPM
+Пакет регламента              selinux-policy-3.13.1-266.el7.noarch selinux-
+                              policy-3.13.1-268.el7_9.2.noarch
+SELinux активен               True
+Тип регламента                targeted
+Режим                         Enforcing
+Имя узла                      nginx
+Платформа                     Linux nginx 3.10.0-1127.el7.x86_64 #1 SMP Tue Mar
+                              31 23:36:51 UTC 2020 x86_64 x86_64
+Счетчик уведомлений           1
+Впервые обнаружено            2021-09-30 12:38:10 UTC
+В последний раз               2021-09-30 12:38:10 UTC
+Локальный ID                  8473b7d8-14c0-4d00-9348-f93b672eefb5
+
+Построчный вывод сообщений аудита
+type=AVC msg=audit(1633005490.487:1327): avc:  denied  { name_bind } for  pid=5398 comm="nginx" src=5080 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:unreserved_port_t:s0 tclass=tcp_socket permissive=0
+
+
+type=SYSCALL msg=audit(1633005490.487:1327): arch=x86_64 syscall=bind success=no exit=EACCES a0=6 a1=562a1fd64b18 a2=10 a3=7ffde11166e0 items=0 ppid=1 pid=5398 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm=nginx exe=/usr/sbin/nginx subj=system_u:system_r:httpd_t:s0 key=(null)
+
+Hash: nginx,httpd_t,unreserved_port_t,tcp_socket,name_bind
+
+[root@nginx ~]# which nginx
+/sbin/nginx
+[root@nginx ~]# ls -Z /sbin/nginx
+-rwxr-xr-x. root root system_u:object_r:httpd_exec_t:s0 /sbin/nginx
+[root@nginx ~]# semanage port -l | grep http
+http_cache_port_t              tcp      8080, 8118, 8123, 10001-10010
+http_cache_port_t              udp      3130
+http_port_t                    tcp      80, 81, 443, 488, 8008, 8009, 8443, 9000
+pegasus_http_port_t            tcp      5988
+pegasus_https_port_t           tcp      5989
+[root@nginx ~]# semanage port -a -t http_port_t -p tcp 5080
+[root@nginx ~]# systemctl start nginx
+[root@nginx ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; vendor preset: disabled)
+   Active: active (running) since Чт 2021-09-30 12:54:18 UTC; 7s ago
+  Process: 5622 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 5619 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+  Process: 5618 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 5624 (nginx)
+   CGroup: /system.slice/nginx.service
+           ├─5624 nginx: master process /usr/sbin/nginx
+           └─5625 nginx: worker process
+
+сен 30 12:54:17 nginx systemd[1]: Starting The nginx HTTP and reverse proxy server...
+сен 30 12:54:18 nginx nginx[5619]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+сен 30 12:54:18 nginx nginx[5619]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+сен 30 12:54:18 nginx systemd[1]: Started The nginx HTTP and reverse proxy server.
+[root@nginx ~]# semanage port -d -t http_port_t -p tcp 5080
+[root@nginx ~]# systemctl restart nginx
+Job for nginx.service failed because the control process exited with error code. See "systemctl status nginx.service" and "journalctl -xe" for details.
+[root@nginx ~]# setsebool -P nis_enabled 1
+[root@nginx ~]# systemctl start nginx
+[root@nginx ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; vendor preset: disabled)
+   Active: active (running) since Чт 2021-09-30 12:55:14 UTC; 3s ago
+  Process: 5674 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 5672 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+  Process: 5671 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 5676 (nginx)
+   CGroup: /system.slice/nginx.service
+           ├─5676 nginx: master process /usr/sbin/nginx
+           └─5677 nginx: worker process
+
+сен 30 12:55:14 nginx systemd[1]: Starting The nginx HTTP and reverse proxy server...
+сен 30 12:55:14 nginx nginx[5672]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+сен 30 12:55:14 nginx nginx[5672]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+сен 30 12:55:14 nginx systemd[1]: Started The nginx HTTP and reverse proxy server.
+[root@nginx ~]# setsebool -P nis_enabled 0
+[root@nginx ~]# systemctl restart nginx
+Job for nginx.service failed because the control process exited with error code. See "systemctl status nginx.service" and "journalctl -xe" for details.
+[root@nginx ~]# ausearch -c 'nginx' --raw | audit2allow -M my-nginx
+******************** IMPORTANT ***********************
+To make this policy package active, execute:
+
+semodule -i my-nginx.pp
+
+[root@nginx ~]# semodule -i my-nginx.pp
+[root@nginx ~]# systemctl start nginx
+[root@nginx ~]# systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; vendor preset: disabled)
+   Active: active (running) since Чт 2021-09-30 13:04:10 UTC; 24s ago
+  Process: 5749 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+  Process: 5747 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+  Process: 5745 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+ Main PID: 5751 (nginx)
+   CGroup: /system.slice/nginx.service
+           ├─5751 nginx: master process /usr/sbin/nginx
+           └─5752 nginx: worker process
+
+сен 30 13:04:10 nginx systemd[1]: Starting The nginx HTTP and reverse proxy server...
+сен 30 13:04:10 nginx nginx[5747]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+сен 30 13:04:10 nginx nginx[5747]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+сен 30 13:04:10 nginx systemd[1]: Started The nginx HTTP and reverse proxy server.
+[root@nginx ~]# semodule -r my-nginx
+libsemanage.semanage_direct_remove_key: Removing last my-nginx module (no other my-nginx module exists at another priority).
+[root@nginx ~]# systemctl restart nginx
+Job for nginx.service failed because the control process exited with error code. See "systemctl status nginx.service" and "journalctl -xe" for details.

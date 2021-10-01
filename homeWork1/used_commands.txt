@@ -1,0 +1,29 @@
+systemctl status nginx
+yum -y -q install net-tools
+netstat -natp | grep nginx
+vi /etc/nginx/nginx.conf
+systemctl restart nginx
+systemctl status nginx
+yum -y -q install setools-console policycoreutils-python policycoreutils-newrole selinux-policy-mls setroubleshoot-server
+less /var/log/audit/audit.log
+vi /tmp/1.log
+sealert -a /tmp/1.log
+which nginx
+ls -Z /sbin/nginx
+semanage port -l | grep http
+semanage port -a -t http_port_t -p tcp 5080
+systemctl start nginx
+systemctl status nginx
+semanage port -d -t http_port_t -p tcp 5080
+systemctl restart nginx
+setsebool -P nis_enabled 1
+systemctl start nginx
+systemctl status nginx
+setsebool -P nis_enabled 0
+systemctl restart nginx
+ausearch -c 'nginx' --raw | audit2allow -M my-nginx
+semodule -i my-nginx.pp
+systemctl start nginx
+systemctl status nginx
+semodule -r my-nginx
+systemctl restart nginx
